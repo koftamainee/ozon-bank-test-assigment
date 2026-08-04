@@ -1,0 +1,23 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  entrypoint = ["./tmp/app"]
+  cmd = "go build -o ./tmp/app ./cmd/api/main.go"
+  delay = 1000
+  exclude_dir = ["tmp", "docs", "docker", ".git"]
+  include_ext = ["go"]
+  send_interrupt = true
+  stop_on_error = true
+
+[log]
+  time = false
+
+[color]
+  main    = "magenta"
+  watcher = "cyan"
+  build   = "yellow"
+  runner  = "green"
+
+[misc]
+  clean_on_exit = true

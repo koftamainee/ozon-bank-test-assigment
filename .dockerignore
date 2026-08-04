@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+.idea
+.vscode
+docs
+site
+*.md
+docker-compose.yaml
+mkdocs.yaml
+tmp
