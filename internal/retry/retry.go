@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+const maxBackoffShift = 30
+
+func backoff(delay time.Duration, i int) time.Duration {
+	if i > maxBackoffShift {
+		i = maxBackoffShift
+	}
+	return delay * time.Duration(1<<uint(i))
+}
+
 func Get[T any](ctx context.Context, fn func() (T, error), attempts int, delay time.Duration) (T, error) {
 	var zero T
 
@@ -18,11 +27,10 @@ func Get[T any](ctx context.Context, fn func() (T, error), attempts int, delay t
 			return zero, err
 		}
 
-		backoff := delay * time.Duration(1<<uint(i))
 		select {
 		case <-ctx.Done():
 			return zero, ctx.Err()
-		case <-time.After(backoff):
+		case <-time.After(backoff(delay, i)):
 		}
 	}
 
@@ -37,27 +45,12 @@ func Do(ctx context.Context, fn func() error, attempts int, delay time.Duration)
 			return err
 		}
 
-		backoff := delay * time.Duration(1<<uint(i))
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(backoff):
+		case <-time.After(backoff(delay, i)):
 		}
 	}
 
 	return nil
-}
-
-func MustGet[T any](ctx context.Context, fn func() (T, error), attempts int, delay time.Duration) T {
-	result, err := Get(ctx, fn, attempts, delay)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-func MustDo(ctx context.Context, fn func() error, attempts int, delay time.Duration) {
-	if err := Do(ctx, fn, attempts, delay); err != nil {
-		panic(err)
-	}
 }

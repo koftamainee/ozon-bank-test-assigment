@@ -80,8 +80,8 @@ func TestReadinessDegraded(t *testing.T) {
 		t.Errorf("status = %q, want degraded", body.Status)
 	}
 	check := body.Checks["db"]
-	if check.Status != "error" || check.Error != "down" {
-		t.Errorf("db check = %+v, want error/down", check)
+	if check.Status != "error" {
+		t.Errorf("db check = %+v, want error status", check)
 	}
 }
 

@@ -1,11 +1,14 @@
 package middleware
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 )
@@ -19,7 +22,7 @@ const (
 
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := r.Header.Get("X-Request-ID")
+		id := sanitizeRequestID(r.Header.Get("X-Request-ID"))
 		if id == "" {
 			id = generateID()
 		}
@@ -30,6 +33,28 @@ func RequestID(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, loggerKey, slog.Default().With("request_id", id))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func sanitizeRequestID(s string) string {
+	if s == "" || len(s) > 64 {
+		return ""
+	}
+	for _, r := range s {
+		if !isSafeRequestIDRune(r) {
+			return ""
+		}
+	}
+	return s
+}
+
+func isSafeRequestIDRune(r rune) bool {
+	if r == '-' || r == '_' || r == '.' {
+		return true
+	}
+	if r >= '0' && r <= '9' {
+		return true
+	}
+	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
 }
 
 func RequestIDFromContext(ctx context.Context) string {
@@ -71,9 +96,30 @@ func Recovery(next http.Handler) http.Handler {
 					"method", r.Method,
 					"path", r.URL.Path,
 				)
-				http.Error(w, fmt.Sprintf("%v", rec), http.StatusInternalServerError)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
 		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func LimitBody(maxBytes int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Cross-Origin-Opener-Policy", "same-origin")
+		h.Set("Cross-Origin-Resource-Policy", "same-origin")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -88,14 +134,38 @@ func (w *statusWriter) WriteHeader(code int) {
 	w.ResponseWriter.WriteHeader(code)
 }
 
-func generateID() string {
-	return fmt.Sprintf("%d-%s", time.Now().UnixNano(), randomHex(8))
+func (w *statusWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("response writer does not implement http.Hijacker")
+	}
+	return h.Hijack()
 }
 
-func randomHex(n int) string {
-	b := make([]byte, n/2)
-	if _, err := rand.Read(b); err != nil {
-		panic(err)
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
 	}
-	return hex.EncodeToString(b)
+}
+
+func (w *statusWriter) Push(target string, opts *http.PushOptions) error {
+	if p, ok := w.ResponseWriter.(http.Pusher); ok {
+		return p.Push(target, opts)
+	}
+	return http.ErrNotSupported
+}
+
+func (w *statusWriter) ReadFrom(r io.Reader) (int64, error) {
+	if rf, ok := w.ResponseWriter.(io.ReaderFrom); ok {
+		return rf.ReadFrom(r)
+	}
+	return 0, fmt.Errorf("response writer does not implement io.ReaderFrom")
+}
+
+func generateID() string {
+	buf := make([]byte, 8)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Sprintf("%x", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf)
 }

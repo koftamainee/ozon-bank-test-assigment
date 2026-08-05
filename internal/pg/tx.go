@@ -16,10 +16,19 @@ func WithTx(ctx context.Context, pool PgxPool, fn func(tx pgx.Tx) error) error {
 		return err
 	}
 
+	rollback := func() {
+		_ = tx.Rollback(context.WithoutCancel(ctx))
+	}
+
 	if err := fn(tx); err != nil {
-		_ = tx.Rollback(ctx)
+		rollback()
 		return err
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		rollback()
+		return err
+	}
+
+	return nil
 }

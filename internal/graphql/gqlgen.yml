@@ -1,0 +1,29 @@
+schema:
+  - schema.graphql
+
+exec:
+  filename: generated.go
+  package: graphql
+
+model:
+  filename: models_gen.go
+  package: graphql
+
+resolver:
+  layout: follow-schema
+  dir: .
+  package: graphql
+
+models:
+  Int64:
+    model:
+      - github.com/koftamainee/ozon-bank-test-assigment/internal/graphql.Int64
+  User:
+    model:
+      - github.com/koftamainee/ozon-bank-test-assigment/internal/domain.User
+  Post:
+    model:
+      - github.com/koftamainee/ozon-bank-test-assigment/internal/domain.Post
+  Comment:
+    model:
+      - github.com/koftamainee/ozon-bank-test-assigment/internal/domain.Comment

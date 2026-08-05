@@ -15,6 +15,7 @@ func TestCamelToSnake(t *testing.T) {
 		"already_snake":   "already_snake",
 		"single":          "single",
 		"ConnMaxLifetime": "conn_max_lifetime",
+		"ЖЗЧеловек":       "жз_человек",
 	}
 
 	for in, want := range cases {
@@ -39,6 +40,39 @@ type durationCfg struct {
 
 type requiredCfg struct {
 	Token string
+}
+
+type optionalCfg struct {
+	Token    string `optional:"true"`
+	Required string
+}
+
+func TestLoadOptionalFieldDefaultsToZero(t *testing.T) {
+	t.Setenv("REQUIRED", "x")
+
+	var cfg optionalCfg
+	if err := Load(&cfg); err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Token != "" {
+		t.Errorf("Token = %q, want empty", cfg.Token)
+	}
+	if cfg.Required != "x" {
+		t.Errorf("Required = %q, want x", cfg.Required)
+	}
+}
+
+func TestLoadOptionalFieldFromEnv(t *testing.T) {
+	t.Setenv("REQUIRED", "x")
+	t.Setenv("TOKEN", "secret")
+
+	var cfg optionalCfg
+	if err := Load(&cfg); err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Token != "secret" {
+		t.Errorf("Token = %q, want secret", cfg.Token)
+	}
 }
 
 func TestLoadFromEnv(t *testing.T) {

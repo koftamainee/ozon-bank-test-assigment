@@ -128,41 +128,34 @@ func TestGetContextCancelled(t *testing.T) {
 }
 
 func TestMustGet(t *testing.T) {
-	got := MustGet(context.Background(), func() (string, error) {
+	got, err := Get(context.Background(), func() (string, error) {
 		return "ok", nil
 	}, 3, tiny)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if got != "ok" {
-		t.Errorf("MustGet() = %q, want ok", got)
+		t.Errorf("Get() = %q, want ok", got)
 	}
 }
 
-func TestMustGetPanicsOnError(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("MustGet() did not panic")
-		}
-	}()
-
-	MustGet(context.Background(), func() (int, error) {
-		return 0, errBoom
-	}, 3, tiny)
-}
-
 func TestMustDo(t *testing.T) {
-	MustDo(context.Background(), func() error {
+	if err := Do(context.Background(), func() error {
 		return nil
-	}, 3, tiny)
+	}, 3, tiny); err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestMustDoPanicsOnError(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("MustDo() did not panic")
-		}
-	}()
-
-	MustDo(context.Background(), func() error {
-		return errBoom
-	}, 3, tiny)
+func TestBackoffShiftCapped(t *testing.T) {
+	if got, want := backoff(time.Second, maxBackoffShift), time.Second*time.Duration(1<<maxBackoffShift); got != want {
+		t.Fatalf("backoff at cap = %v, want %v", got, want)
+	}
+	if got, want := backoff(time.Second, maxBackoffShift+40), time.Second*time.Duration(1<<maxBackoffShift); got != want {
+		t.Fatalf("backoff past cap = %v, want %v", got, want)
+	}
+	if got := backoff(time.Second, maxBackoffShift+40); got <= 0 {
+		t.Fatalf("backoff must stay positive, got %v", got)
+	}
 }

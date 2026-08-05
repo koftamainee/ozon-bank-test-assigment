@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	MaxUsernameLength = 32
-	MaxCommentLength  = 2000
+	MaxUsernameLength  = 32
+	MaxCommentLength   = 2000
+	MaxPostTitleLength = 300
+	MaxPostBodyLength  = 40000
 )
 
 type Username string
@@ -17,7 +19,22 @@ func NewUsername(s string) (Username, error) {
 	if s == "" || utf8.RuneCountInString(s) > MaxUsernameLength {
 		return "", ErrInvalidUsername
 	}
+	for _, r := range s {
+		if !isValidUsernameRune(r) {
+			return "", ErrInvalidUsername
+		}
+	}
 	return Username(s), nil
+}
+
+func isValidUsernameRune(r rune) bool {
+	if r == '_' || r == '-' {
+		return true
+	}
+	if r >= '0' && r <= '9' {
+		return true
+	}
+	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
 }
 
 func (u Username) String() string {

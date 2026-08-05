@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
+	"time"
 )
 
 var levelColors = map[slog.Level]string{
-	slog.LevelDebug: "\033[36m", // cyan
-	slog.LevelInfo:  "\033[32m", // green
-	slog.LevelWarn:  "\033[33m", // yellow
-	slog.LevelError: "\033[31m", // red
+	slog.LevelDebug: "\033[36m",
+	slog.LevelInfo:  "\033[32m",
+	slog.LevelWarn:  "\033[33m",
+	slog.LevelError: "\033[31m",
 }
 
 const reset = "\033[0m"
@@ -46,14 +48,16 @@ func (h *terminalHandler) Handle(_ context.Context, r slog.Record) error {
 		}
 	}
 
-	var line string
+	parts := make([]string, 0, 4)
+	if !r.Time.IsZero() {
+		parts = append(parts, r.Time.Format(time.RFC3339Nano))
+	}
+	parts = append(parts, level, msg)
 	if len(h.attrs) > 0 || r.NumAttrs() > 0 {
-		line = fmt.Sprintf("%s %s %s", level, msg, h.formatAttrs(r))
-	} else {
-		line = fmt.Sprintf("%s %s", level, msg)
+		parts = append(parts, strings.TrimSpace(h.formatAttrs(r)))
 	}
 
-	_, err := fmt.Fprintln(h.out, line)
+	_, err := fmt.Fprintln(h.out, strings.Join(parts, " "))
 	return err
 }
 
@@ -74,13 +78,35 @@ func (h *terminalHandler) WithGroup(name string) slog.Handler {
 }
 
 func (h *terminalHandler) formatAttrs(r slog.Record) string {
+	prefix := strings.Join(h.groups, ".")
 	var buf []byte
 	r.Attrs(func(a slog.Attr) bool {
-		buf = append(buf, fmt.Sprintf("%s=%v ", a.Key, a.Value)...)
+		appendAttr(&buf, prefix, a)
 		return true
 	})
 	for _, a := range h.attrs {
-		buf = append(buf, fmt.Sprintf("%s=%v ", a.Key, a.Value)...)
+		appendAttr(&buf, prefix, a)
 	}
 	return string(buf)
+}
+
+func appendAttr(buf *[]byte, prefix string, a slog.Attr) {
+	if a.Equal(slog.Attr{}) {
+		return
+	}
+	key := a.Key
+	if prefix != "" {
+		key = prefix + "." + key
+	}
+	if a.Value.Kind() == slog.KindGroup {
+		inner := key
+		if prefix == "" {
+			inner = a.Key
+		}
+		for _, child := range a.Value.Group() {
+			appendAttr(buf, inner, child)
+		}
+		return
+	}
+	*buf = append(*buf, fmt.Sprintf("%s=%v ", key, a.Value.Any())...)
 }

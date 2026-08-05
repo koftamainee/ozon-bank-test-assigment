@@ -36,3 +36,42 @@ func TestNewAppliesPoolConfig(t *testing.T) {
 		t.Errorf("MaxConnLifetime = %v, want 1m", cfg.MaxConnLifetime)
 	}
 }
+
+func TestNewAppliesDefaults(t *testing.T) {
+	pool, err := New(context.Background(), Config{DSN: "postgres://user:pass@localhost:5432/db"})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	defer pool.Close()
+
+	cfg := pool.Config()
+	if cfg.MaxConns != 10 {
+		t.Errorf("MaxConns = %d, want default 10", cfg.MaxConns)
+	}
+	if cfg.MinConns != 5 {
+		t.Errorf("MinConns = %d, want default 5", cfg.MinConns)
+	}
+	if cfg.MaxConnLifetime != 30*time.Minute {
+		t.Errorf("MaxConnLifetime = %v, want default 30m", cfg.MaxConnLifetime)
+	}
+}
+
+func TestNewClampsMinConns(t *testing.T) {
+	pool, err := New(context.Background(), Config{
+		DSN:          "postgres://user:pass@localhost:5432/db",
+		MaxOpenConns: 3,
+		MaxIdleConns: 9,
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	defer pool.Close()
+
+	cfg := pool.Config()
+	if cfg.MinConns > cfg.MaxConns {
+		t.Fatalf("MinConns = %d > MaxConns = %d, want clamped", cfg.MinConns, cfg.MaxConns)
+	}
+	if cfg.MinConns != 3 {
+		t.Errorf("MinConns = %d, want clamped to 3", cfg.MinConns)
+	}
+}

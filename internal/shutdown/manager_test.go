@@ -116,8 +116,6 @@ func TestRunWithSignals(t *testing.T) {
 		return nil
 	})
 
-	// Register a dummy handler first so the test binary survives SIGTERM even
-	// before run() registers its own handler.
 	watch := make(chan os.Signal, 1)
 	signal.Notify(watch, syscall.SIGTERM)
 	defer signal.Reset(syscall.SIGTERM)

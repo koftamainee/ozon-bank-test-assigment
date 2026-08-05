@@ -1,0 +1,67 @@
+scalar Int64
+scalar Time
+
+type User {
+  id: Int64!
+  username: String!
+  createdAt: Time!
+}
+
+type Post {
+  id: Int64!
+  author: User!
+  title: String!
+  body: String!
+  commentsAllowed: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type Comment {
+  id: Int64!
+  author: User!
+  postID: Int64!
+  parentID: Int64
+  depth: Int!
+  body: String!
+  createdAt: Time!
+}
+
+type PostPage {
+  items: [Post!]!
+  next: String
+}
+
+type CommentPage {
+  items: [Comment!]!
+  next: String
+}
+
+type Query {
+  "List posts (newest first). `first` is clamped to [1..100], default 20."
+  posts(first: Int, after: String): PostPage!
+  post(id: Int64!): Post!
+  "List comments (depth-first, newest first). `first` is clamped to [1..100], default 20."
+  comments(postID: Int64!, first: Int, after: String): CommentPage!
+}
+
+input CreatePostInput {
+  title: String!
+  body: String!
+}
+
+input CreateCommentInput {
+  postID: Int64!
+  parentID: Int64
+  body: String!
+}
+
+type Mutation {
+  createPost(input: CreatePostInput!): Post!
+  setCommentsAllowed(postID: Int64!, allowed: Boolean!): Post!
+  createComment(input: CreateCommentInput!): Comment!
+}
+
+type Subscription {
+  commentAdded(postID: Int64!): Comment!
+}

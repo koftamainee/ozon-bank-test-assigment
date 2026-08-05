@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -18,6 +19,7 @@ type service struct {
 }
 
 type Manager struct {
+	mu       sync.Mutex
 	services []service
 }
 
@@ -26,7 +28,15 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) Register(name string, fn Func) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.services = append(m.services, service{name: name, fn: fn})
+}
+
+func (m *Manager) snapshot() []service {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]service(nil), m.services...)
 }
 
 func (m *Manager) Run(ctx context.Context) {
@@ -53,8 +63,10 @@ func (m *Manager) run(ctx context.Context, timeout time.Duration, quit <-chan os
 		defer cancel()
 	}
 
-	for i := len(m.services) - 1; i >= 0; i-- {
-		svc := m.services[i]
+	services := m.snapshot()
+
+	for i := len(services) - 1; i >= 0; i-- {
+		svc := services[i]
 		slog.Info("stopping service", "name", svc.name)
 
 		if err := svc.fn(ctx); err != nil {

@@ -87,9 +87,6 @@ func TestErrorHelpers(t *testing.T) {
 			if e.Msg != "some message" {
 				t.Errorf("msg = %q, want %q", e.Msg, "some message")
 			}
-			if e.Status != 0 {
-				t.Errorf("status field should not be serialized, got %d", e.Status)
-			}
 		})
 	}
 }
@@ -147,7 +144,7 @@ func TestErrorf(t *testing.T) {
 }
 
 func TestErrorString(t *testing.T) {
-	e := Error{Status: http.StatusTeapot, Code: "TEA", Msg: "short and stout"}
+	e := Error{Code: "TEA", Msg: "short and stout"}
 	if got := e.Error(); got != "TEA: short and stout" {
 		t.Errorf("Error() = %q, want %q", got, "TEA: short and stout")
 	}

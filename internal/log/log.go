@@ -8,7 +8,7 @@ import (
 type Level int
 
 const (
-	LevelDebug Level = iota
+	LevelDebug Level = iota + 1
 	LevelInfo
 	LevelWarn
 	LevelError
@@ -31,6 +31,8 @@ func Init(opts Options) {
 		level = slog.LevelWarn
 	case LevelError:
 		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
 	}
 
 	var handler slog.Handler

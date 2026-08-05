@@ -1,9 +1,10 @@
 root = "."
 tmp_dir = "tmp"
+env_files = [".env"]
 
 [build]
   entrypoint = ["./tmp/app"]
-  cmd = "go build -o ./tmp/app ./cmd/api/main.go"
+  cmd = "go build -o ./tmp/app ./cmd/api"
   delay = 1000
   exclude_dir = ["tmp", "docs", "docker", ".git"]
   include_ext = ["go"]

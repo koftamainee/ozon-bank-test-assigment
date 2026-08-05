@@ -18,9 +18,24 @@ func New(cfg Config, opts *Options) (*http.ServeMux, *http.Server, *health.Healt
 		readTimeout = 10 * time.Second
 	}
 
+	readHeaderTimeout := cfg.ReadHeaderTimeout
+	if readHeaderTimeout == 0 {
+		readHeaderTimeout = 5 * time.Second
+	}
+
 	writeTimeout := cfg.WriteTimeout
 	if writeTimeout == 0 {
 		writeTimeout = 10 * time.Second
+	}
+
+	idleTimeout := cfg.IdleTimeout
+	if idleTimeout == 0 {
+		idleTimeout = 60 * time.Second
+	}
+
+	maxHeaderBytes := cfg.MaxHeaderBytes
+	if maxHeaderBytes == 0 {
+		maxHeaderBytes = 1 << 20
 	}
 
 	mux := http.NewServeMux()
@@ -33,6 +48,9 @@ func New(cfg Config, opts *Options) (*http.ServeMux, *http.Server, *health.Healt
 
 	var hdl http.Handler = mux
 
+	if opts.securityHeaders {
+		hdl = middleware.SecurityHeaders(hdl)
+	}
 	if opts.recovery {
 		hdl = middleware.Recovery(hdl)
 	}
@@ -47,10 +65,13 @@ func New(cfg Config, opts *Options) (*http.ServeMux, *http.Server, *health.Healt
 	}
 
 	srv := &http.Server{
-		Addr:         cfg.Addr,
-		Handler:      hdl,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
+		Addr:              cfg.Addr,
+		Handler:           hdl,
+		ReadTimeout:       readTimeout,
+		ReadHeaderTimeout: readHeaderTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+		MaxHeaderBytes:    maxHeaderBytes,
 	}
 
 	return mux, srv, h

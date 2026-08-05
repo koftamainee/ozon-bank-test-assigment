@@ -35,6 +35,22 @@ func TestNewUsername(t *testing.T) {
 			t.Errorf("NewUsername() error = %v, want nil", err)
 		}
 	})
+
+	t.Run("allowed specials", func(t *testing.T) {
+		for _, name := range []string{"a_b", "a-b", "a1B_2-c"} {
+			if _, err := NewUsername(name); err != nil {
+				t.Errorf("NewUsername(%q) error = %v, want nil", name, err)
+			}
+		}
+	})
+
+	t.Run("invalid characters", func(t *testing.T) {
+		for _, name := range []string{"alice@x", "a b", "a.b", "a/b", "a\x00", "алеся"} {
+			if _, err := NewUsername(name); !errors.Is(err, ErrInvalidUsername) {
+				t.Errorf("NewUsername(%q) error = %v, want ErrInvalidUsername", name, err)
+			}
+		}
+	})
 }
 
 func TestNewCommentBody(t *testing.T) {

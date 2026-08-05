@@ -11,9 +11,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/api
 
 FROM alpine:3.21
 
+RUN addgroup -S app && adduser -S -G app app
+
 WORKDIR /app
 
 COPY --from=builder /app/server /app/server
+
+USER app
 
 EXPOSE 8080
 

@@ -3,19 +3,21 @@ package httpserver
 import "net/http"
 
 type Options struct {
-	health     bool
-	logger     bool
-	requestID  bool
-	recovery   bool
-	middleware []func(http.Handler) http.Handler
+	health          bool
+	logger          bool
+	requestID       bool
+	recovery        bool
+	securityHeaders bool
+	middleware      []func(http.Handler) http.Handler
 }
 
 func Default() *Options {
 	return &Options{
-		health:    true,
-		logger:    true,
-		requestID: true,
-		recovery:  true,
+		health:          true,
+		logger:          true,
+		requestID:       true,
+		recovery:        true,
+		securityHeaders: true,
 	}
 }
 
@@ -44,6 +46,12 @@ func (o *Options) WithoutRequestID() *Options {
 func (o *Options) WithoutRecovery() *Options {
 	clone := *o
 	clone.recovery = false
+	return &clone
+}
+
+func (o *Options) WithoutSecurityHeaders() *Options {
+	clone := *o
+	clone.securityHeaders = false
 	return &clone
 }
 

@@ -1,0 +1,13 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "schema.gen.sql"
+    queries: "../internal/store/postgres/queries"
+    gen:
+      go:
+        package: "storepg"
+        out: "../internal/store/postgres/gen"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "pg_catalog.int2"
+            go_type: "int"

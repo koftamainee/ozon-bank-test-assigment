@@ -1,12 +1,12 @@
-.PHONY: dev stop logs build up down test migrate migrate-create \
-       install-air lint lint-fix db-shell db-reset tidy check
+.PHONY: dev infra stop logs build up down test migrate migrate-create \
+       install-air lint lint-fix db-shell db-reset tidy check sqlc install-sqlc gqlgen install-gqlgen
 
 dev: infra
 	if [ -n "$$TMUX" ]; then \
-		tmux new-window -n app "air"; \
+		tmux new-window -n app "export \$$(grep -v '^#' .env 2>/dev/null | xargs); air"; \
 		tmux select-window -t shell; \
 	else \
-		tmux new-window -t forum -n app "air"; \
+		tmux new-window -t forum -n app "export \$$(grep -v '^#' .env 2>/dev/null | xargs); air"; \
 		tmux select-window -t forum:shell; \
 		tmux attach -t forum; \
 	fi
@@ -49,6 +49,7 @@ db-reset:
 
 migrate:
 	@export $$(grep -v '^#' .env 2>/dev/null | xargs); \
+	if [ -z "$${MIGRATOR_PASSWORD:-}" ]; then echo "error: MIGRATOR_PASSWORD not set in .env"; exit 1; fi; \
 	docker compose -f docker-compose.dev.yaml run --rm migrator -path /migrations -database "postgres://migrator:$${MIGRATOR_PASSWORD}@db:5432/forum?sslmode=disable" up
 
 migrate-create:
@@ -85,3 +86,17 @@ lint-fix:
 
 install-air:
 	go install github.com/air-verse/air@latest
+
+install-sqlc:
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+
+sqlc:
+	@printf '%s\n' "-- Code generated from migrations/*.up.sql by 'make sqlc'. DO NOT EDIT." > sqlc/schema.gen.sql
+	@cat migrations/*.up.sql >> sqlc/schema.gen.sql
+	go run github.com/sqlc-dev/sqlc/cmd/sqlc generate -f sqlc/sqlc.yaml
+
+install-gqlgen:
+	go install github.com/99designs/gqlgen@v0.17.94
+
+gqlgen:
+	cd internal/graphql && go run github.com/99designs/gqlgen generate

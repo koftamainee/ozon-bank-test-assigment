@@ -73,6 +73,10 @@ func load(v reflect.Value, prefix string) error {
 			continue
 		}
 
+		if field.Tag.Get("optional") == "true" {
+			continue
+		}
+
 		return fmt.Errorf("field %s: no value and no default", key)
 	}
 
@@ -88,13 +92,14 @@ func buildKey(prefix, name string) string {
 }
 
 func camelToSnake(s string) string {
+	runes := []rune(s)
 	var result []rune
-	for i, r := range s {
+	for i, r := range runes {
 		if i > 0 && unicode.IsUpper(r) {
-			prev := rune(s[i-1])
+			prev := runes[i-1]
 			if unicode.IsLower(prev) {
 				result = append(result, '_')
-			} else if unicode.IsUpper(prev) && i+1 < len(s) && unicode.IsLower(rune(s[i+1])) {
+			} else if unicode.IsUpper(prev) && i+1 < len(runes) && unicode.IsLower(runes[i+1]) {
 				result = append(result, '_')
 			}
 		}

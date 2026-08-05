@@ -4,7 +4,6 @@ CREATE TABLE posts (
     title            text NOT NULL,
     body             text NOT NULL,
     comments_allowed boolean NOT NULL DEFAULT true,
-    -- NOTE: if we need to delete posts we need soft-delete or cascade drop
     deleted_at       timestamptz,
     created_at       timestamptz NOT NULL DEFAULT now(),
     updated_at       timestamptz NOT NULL DEFAULT now()

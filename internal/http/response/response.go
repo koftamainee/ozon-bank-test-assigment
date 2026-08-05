@@ -8,9 +8,8 @@ import (
 )
 
 type Error struct {
-	Status int    `json:"-"`
-	Code   string `json:"code"`
-	Msg    string `json:"error"`
+	Code string `json:"code"`
+	Msg  string `json:"error"`
 }
 
 func (e *Error) Error() string {
@@ -71,8 +70,7 @@ func Internal(w http.ResponseWriter) error {
 
 func Errorf(w http.ResponseWriter, status int, code string, msg string) error {
 	return encode(w, status, Error{
-		Status: status,
-		Code:   code,
-		Msg:    msg,
+		Code: code,
+		Msg:  msg,
 	})
 }

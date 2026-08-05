@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ type CheckFunc func(ctx context.Context) error
 
 type CheckResult struct {
 	Status string `json:"status"`
-	Error  string `json:"error,omitempty"`
 }
 
 type Health struct {
@@ -68,7 +68,8 @@ func (h *Health) Readiness() http.HandlerFunc {
 
 		for name, check := range checks {
 			if err := check(ctx); err != nil {
-				results[name] = CheckResult{Status: "error", Error: err.Error()}
+				slog.Warn("readiness check failed", "check", name, "error", err)
+				results[name] = CheckResult{Status: "error"}
 				allOK = false
 			} else {
 				results[name] = CheckResult{Status: "ok"}
