@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -234,14 +235,14 @@ func TestCommentsRootAndChildPaths(t *testing.T) {
 	post := mustCreatePost(t, p, alice.ID, "t", "b")
 
 	root := mustCreateComment(t, c, post.ID, alice.ID, nil, "root")
-	if root.Path != padID(root.ID) || root.Depth != 0 {
-		t.Fatalf("root path/depth = %q/%d", root.Path, root.Depth)
+	if root.Path != padID(root.ID) || strings.Count(root.Path, ".") != 0 {
+		t.Fatalf("root path/depth = %q/%d", root.Path, strings.Count(root.Path, "."))
 	}
 
 	child := mustCreateComment(t, c, post.ID, alice.ID, int64Ptr(root.ID), "child")
 	wantPath := root.Path + "." + padID(child.ID)
-	if child.Path != wantPath || child.Depth != 1 {
-		t.Fatalf("child path/depth = %q/%d, want %q/1", child.Path, child.Depth, wantPath)
+	if child.Path != wantPath || strings.Count(child.Path, ".") != 1 {
+		t.Fatalf("child path/depth = %q/%d, want %q/1", child.Path, strings.Count(child.Path, "."), wantPath)
 	}
 }
 
@@ -291,8 +292,8 @@ func TestCommentsDeepNesting(t *testing.T) {
 		last = mustCreateComment(t, c, post.ID, alice.ID, parent, "level")
 		parent = int64Ptr(last.ID)
 	}
-	if last.Depth != 9 {
-		t.Fatalf("depth = %d, want 9", last.Depth)
+	if strings.Count(last.Path, ".") != 9 {
+		t.Fatalf("depth = %d, want 9", strings.Count(last.Path, "."))
 	}
 
 	page, err := c.ListByPost(ctx, post.ID, 100, nil)
@@ -303,8 +304,8 @@ func TestCommentsDeepNesting(t *testing.T) {
 		t.Fatalf("len = %d, want 10", len(page.Items))
 	}
 	for i, cm := range page.Items {
-		if cm.Depth != i {
-			t.Fatalf("item %d depth = %d, want %d", i, cm.Depth, i)
+		if strings.Count(cm.Path, ".") != i {
+			t.Fatalf("item %d depth = %d, want %d", i, strings.Count(cm.Path, "."), i)
 		}
 	}
 }

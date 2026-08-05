@@ -25,7 +25,6 @@ func (s *Comments) Create(ctx context.Context, c domain.Comment) (domain.Comment
 		return domain.Comment{}, domain.ErrCommentsDisabled
 	}
 
-	depth := 0
 	var parentPath string
 	if c.ParentID != nil {
 		parent, ok := s.commentsByID[*c.ParentID]
@@ -38,7 +37,6 @@ func (s *Comments) Create(ctx context.Context, c domain.Comment) (domain.Comment
 		if parent.IsDeleted() {
 			return domain.Comment{}, domain.ErrParentDeleted
 		}
-		depth = parent.Depth + 1
 		parentPath = parent.Path
 	}
 
@@ -46,7 +44,6 @@ func (s *Comments) Create(ctx context.Context, c domain.Comment) (domain.Comment
 	c.ID = s.nextCommentID
 	c.CreatedAt = time.Now().UTC()
 	c.DeletedAt = nil
-	c.Depth = depth
 	if c.ParentID != nil {
 		c.Path = parentPath + "." + padID(c.ID)
 	} else {

@@ -101,6 +101,8 @@ type ComplexityRoot struct {
 
 type CommentResolver interface {
 	Author(ctx context.Context, obj *domain.Comment) (*domain.User, error)
+
+	Depth(ctx context.Context, obj *domain.Comment) (int, error)
 }
 type MutationResolver interface {
 	CreatePost(ctx context.Context, input CreatePostInput) (*domain.Post, error)
@@ -975,7 +977,7 @@ func (ec *executionContext) _Comment_depth(ctx context.Context, field graphql.Co
 			return ec.fieldContext_Comment_depth(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Depth, nil
+			return ec.Resolvers.Comment().Depth(ctx, obj)
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
@@ -986,7 +988,7 @@ func (ec *executionContext) _Comment_depth(ctx context.Context, field graphql.Co
 	)
 }
 func (ec *executionContext) fieldContext_Comment_depth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("Comment", field, false, false, errors.New("field of type Int does not have child fields"))
+	return graphql.NewScalarFieldContext("Comment", field, true, true, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _Comment_body(ctx context.Context, field graphql.CollectedField, obj *domain.Comment) (ret graphql.Marshaler) {
@@ -2982,10 +2984,43 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "depth":
-			out.Values[i] = ec._Comment_depth(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_depth(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "body":
 			out.Values[i] = ec._Comment_body(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -42,7 +42,7 @@ func TestCommentsCreateRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Path != "0000000000000000008" || got.Depth != 0 || got.ParentID != nil {
+	if got.Path != "0000000000000000008" || got.ParentID != nil {
 		t.Fatalf("got %+v", got)
 	}
 	if err := pool.ExpectationsWereMet(); err != nil {
@@ -82,7 +82,7 @@ func TestCommentsCreateChild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Path != "0000000000000000001.0000000000000000008" || got.Depth != 1 {
+	if got.Path != "0000000000000000001.0000000000000000008" {
 		t.Fatalf("got %+v", got)
 	}
 	if err := pool.ExpectationsWereMet(); err != nil {

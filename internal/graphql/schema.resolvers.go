@@ -7,6 +7,7 @@ package graphql
 
 import (
 	"context"
+	"strings"
 
 	"github.com/koftamainee/ozon-bank-test-assigment/internal/auth"
 	"github.com/koftamainee/ozon-bank-test-assigment/internal/domain"
@@ -20,6 +21,11 @@ func (r *commentResolver) Author(ctx context.Context, obj *domain.Comment) (*dom
 		return nil, gqlError(ctx, err)
 	}
 	return &u, nil
+}
+
+// Depth is the resolver for the depth field.
+func (r *commentResolver) Depth(ctx context.Context, obj *domain.Comment) (int, error) {
+	return strings.Count(obj.Path, "."), nil
 }
 
 // CreatePost is the resolver for the createPost field.

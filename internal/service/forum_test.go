@@ -332,7 +332,7 @@ func TestCreateCommentNestedPublishesEvent(t *testing.T) {
 	root := mustCreateComment(t, forum, alice.ID, post.ID, nil, "root")
 
 	child := mustCreateComment(t, forum, alice.ID, post.ID, int64Ptr(root.ID), "child")
-	if child.Depth != 1 || !strings.Contains(child.Path, root.Path+".") {
+	if strings.Count(child.Path, ".") != 1 || !strings.Contains(child.Path, root.Path+".") {
 		t.Fatalf("child = %+v", child)
 	}
 	if n.count() != 2 {
@@ -394,8 +394,8 @@ func TestCreateCommentDeepNesting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("deep nesting: %v", err)
 	}
-	if got.Depth != levels+1 {
-		t.Fatalf("depth = %d, want %d", got.Depth, levels+1)
+	if strings.Count(got.Path, ".") != levels+1 {
+		t.Fatalf("depth = %d, want %d", strings.Count(got.Path, "."), levels+1)
 	}
 }
 

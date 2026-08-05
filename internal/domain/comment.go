@@ -8,7 +8,6 @@ type Comment struct {
 	AuthorID  int64
 	ParentID  *int64
 	Path      string
-	Depth     int
 	Body      string
 	DeletedAt *time.Time
 	CreatedAt time.Time

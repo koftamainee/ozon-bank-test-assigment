@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -37,15 +36,10 @@ func toDomainComment(c storepg.Comment) domain.Comment {
 		AuthorID:  c.AuthorID,
 		ParentID:  toIDPtr(c.ParentID),
 		Path:      c.Path,
-		Depth:     commentDepth(c.Path),
 		Body:      c.Body,
 		DeletedAt: toTimePtr(c.DeletedAt),
 		CreatedAt: c.CreatedAt.Time,
 	}
-}
-
-func commentDepth(path string) int {
-	return strings.Count(path, ".")
 }
 
 func toTimePtr(ts pgtype.Timestamptz) *time.Time {
