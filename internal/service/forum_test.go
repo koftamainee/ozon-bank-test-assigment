@@ -377,6 +377,22 @@ func TestCreateCommentErrorsDoNotPublish(t *testing.T) {
 	}
 }
 
+func TestCreateCommentParentNotFound(t *testing.T) {
+	auth, forum, _, n := newServices(t)
+	alice := mustLogin(t, auth, "alice")
+	post := mustCreatePost(t, forum, alice.ID, "t", "b")
+
+	_, err := forum.CreateComment(context.Background(), alice.ID, domain.CreateCommentInput{
+		PostID: post.ID, ParentID: int64Ptr(999), Body: "x",
+	})
+	if !errors.Is(err, domain.ErrCommentNotFound) {
+		t.Fatalf("err = %v, want ErrCommentNotFound", err)
+	}
+	if n.count() != 0 {
+		t.Fatalf("notifier calls = %d, want 0", n.count())
+	}
+}
+
 func TestCreateCommentDeepNesting(t *testing.T) {
 	auth, forum, _, _ := newServices(t)
 	alice := mustLogin(t, auth, "alice")

@@ -75,13 +75,8 @@ func (s *ForumService) CreateComment(ctx context.Context, authorID int64, in dom
 	if in.PostID <= 0 {
 		return domain.Comment{}, domain.ErrInvalidID
 	}
-	if in.ParentID != nil {
-		if *in.ParentID <= 0 {
-			return domain.Comment{}, domain.ErrInvalidID
-		}
-		if _, err := s.comments.ByID(ctx, *in.ParentID); err != nil {
-			return domain.Comment{}, err
-		}
+	if in.ParentID != nil && *in.ParentID <= 0 {
+		return domain.Comment{}, domain.ErrInvalidID
 	}
 
 	c, err := s.comments.Create(ctx, domain.Comment{
